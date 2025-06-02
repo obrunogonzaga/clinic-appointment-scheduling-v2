@@ -30,16 +30,27 @@ const RecentActivity = () => {
   ];
 
   return (
-    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-      <h3 className="text-lg font-semibold mb-4">Atividade Recente</h3>
+    <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center">
+          <h3 className="text-xl font-bold text-gray-800">Atividade Recente</h3>
+          <div className="ml-3 w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+        </div>
+        <button className="text-blue-600 hover:text-blue-700 text-sm font-medium transition-colors">
+          Ver todas
+        </button>
+      </div>
       <div className="space-y-3">
         {activities.map((activity, idx) => (
-          <div key={idx} className="flex items-center space-x-3 p-3 hover:bg-gray-50 rounded-lg">
-            <activity.icon className={activity.color} size={20} />
-            <div className="flex-1">
-              <p className="text-sm font-medium">{activity.action}</p>
-              <p className="text-xs text-gray-500">{activity.time} atrás</p>
+          <div key={idx} className="group flex items-center space-x-4 p-4 hover:bg-gradient-to-r hover:from-gray-50 hover:to-blue-50 rounded-xl transition-all duration-300 cursor-pointer border border-transparent hover:border-blue-100">
+            <div className={`p-2 rounded-lg bg-gray-100 group-hover:bg-white transition-colors duration-300 group-hover:shadow-sm`}>
+              <activity.icon className={`${activity.color} group-hover:scale-110 transition-transform duration-300`} size={18} />
             </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold text-gray-800 group-hover:text-gray-900">{activity.action}</p>
+              <p className="text-xs text-gray-500 group-hover:text-gray-600 mt-1">{activity.time} atrás</p>
+            </div>
+            <div className="w-2 h-2 bg-blue-500 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
           </div>
         ))}
       </div>
