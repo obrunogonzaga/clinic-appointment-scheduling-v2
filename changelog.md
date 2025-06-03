@@ -5,7 +5,42 @@ All notable changes to the Laboratory Scheduling System project will be document
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.2.0] - 2025-01-06
+
+### Phase 7 - Patients Module Enhancement
+
+#### Added - Enhanced PatientSearch Component
+- **Multi-field Search**: Added support for searching by specific fields (name, CPF, phone, address, email)
+- **Search Type Selector**: Visual buttons to select which field type to search
+- **Advanced Search Panel**: Dedicated form with individual fields for precise searching
+  - Name field with autocomplete
+  - CPF field with automatic formatting (XXX.XXX.XXX-XX)
+  - Phone field with automatic formatting ((XX) XXXXX-XXXX)
+  - Address field for street, neighborhood, or city
+  - Email field with validation
+  - Health plan card number field
+- **Enhanced Filters**: Added new filter options:
+  - Car assignment filter (CARRO 1-4)
+  - Confirmation rate filter (High >90%, Medium 60-90%, Low <60%)
+  - Risk score filter (Low, Medium, High)
+  - Frequency filter improved (Occasional, Regular, Frequent)
+  - Tags filter with multiple selection
+- **Tag System**: Visual tag badges for patient categorization:
+  - VIP, Elderly, Regular, Frequent, Difficult Access, Priority, Family Group
+- **Smart Search**: Improved search algorithm that:
+  - Strips formatting from CPF and phone numbers for better matching
+  - Searches across multiple address fields
+  - Supports partial matching
+  - Works with both simple and advanced search simultaneously
+
+#### Modified - Patients Page
+- **Enhanced Search Logic**: Updated to handle all new search features
+- **Date Range Filtering**: Properly filters by scheduled dates
+- **Tag-based Filtering**: Filter patients by assigned tags
+- **Confirmation Rate Calculation**: Dynamic filtering based on confirmation percentage
+- **Mock Data Enhancement**: Added more realistic patient data for testing
+
+## [0.1.0] - 2025-01-06
 
 ### Added
 - ✅ Project status tracking file (project-status.md)

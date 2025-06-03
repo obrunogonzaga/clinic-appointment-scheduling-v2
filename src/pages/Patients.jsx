@@ -132,6 +132,88 @@ const Patients = () => {
         specialRequirements: "Paciente com dificuldade de acesso - 3º andar sem elevador"
       },
       updatedAt: "2025-01-04T09:15:00Z"
+    },
+    {
+      id: "patient_004",
+      personalInfo: {
+        name: "João Pedro Almeida",
+        cpf: "789.456.123-78",
+        birthDate: "1965-05-30",
+        gender: "M",
+        email: "joao.almeida@email.com"
+      },
+      contactInfo: {
+        phones: [
+          { number: "(21) 98888-7777", type: "mobile", primary: true }
+        ],
+        address: {
+          street: "Av. Atlântica, 1500",
+          neighborhood: "Copacabana",
+          city: "Rio de Janeiro"
+        }
+      },
+      healthPlan: {
+        provider: "SulAmérica",
+        cardNumber: "987654321",
+        planType: "Gold"
+      },
+      confirmationTracking: {
+        confirmationRate: 0.55,
+        totalAppointments: 9,
+        confirmedAppointments: 5
+      },
+      analytics: {
+        frequency: "regular",
+        riskScore: "high",
+        totalCollections: 9,
+        lastCollectionDate: "2024-12-15"
+      },
+      nextScheduledDate: "2025-01-06",
+      status: "pending",
+      tags: ["elderly", "priority"],
+      assignedCar: "CARRO 2",
+      updatedAt: "2025-01-05T14:00:00Z"
+    },
+    {
+      id: "patient_005",
+      personalInfo: {
+        name: "Luciana Ferreira da Silva",
+        cpf: "555.666.777-88",
+        birthDate: "1988-09-12",
+        gender: "F",
+        email: "luciana.silva@email.com"
+      },
+      contactInfo: {
+        phones: [
+          { number: "(21) 97777-6666", type: "mobile", primary: true }
+        ],
+        address: {
+          street: "Rua Prudente de Morais, 800",
+          neighborhood: "Ipanema",
+          city: "Rio de Janeiro"
+        }
+      },
+      healthPlan: {
+        provider: "Bradesco Saúde",
+        cardNumber: "456789123",
+        planType: "Standard"
+      },
+      confirmationTracking: {
+        confirmationRate: 0.92,
+        totalAppointments: 25,
+        confirmedAppointments: 23
+      },
+      analytics: {
+        frequency: "frequent",
+        riskScore: "low",
+        totalCollections: 25,
+        lastCollectionDate: "2025-01-04"
+      },
+      nextScheduledDate: "2025-01-07",
+      status: "confirmed",
+      tags: ["vip", "regular", "family_group"],
+      assignedCar: "CARRO 1",
+      updatedAt: "2025-01-05T16:30:00Z"
     }
   ];
 
@@ -153,15 +235,81 @@ const Patients = () => {
   const handleSearch = (searchData) => {
     let filtered = patients;
 
-    // Text search
+    // Advanced search fields
+    const advSearch = searchData.advancedSearch;
+    if (advSearch) {
+      if (advSearch.name) {
+        filtered = filtered.filter(patient =>
+          patient.personalInfo?.name?.toLowerCase().includes(advSearch.name.toLowerCase())
+        );
+      }
+      if (advSearch.cpf) {
+        const cpfDigits = advSearch.cpf.replace(/\D/g, '');
+        filtered = filtered.filter(patient => {
+          const patientCPF = patient.personalInfo?.cpf?.replace(/\D/g, '');
+          return patientCPF?.includes(cpfDigits);
+        });
+      }
+      if (advSearch.phone) {
+        const phoneDigits = advSearch.phone.replace(/\D/g, '');
+        filtered = filtered.filter(patient =>
+          patient.contactInfo?.phones?.some(phone => 
+            phone.number.replace(/\D/g, '').includes(phoneDigits)
+          )
+        );
+      }
+      if (advSearch.address) {
+        const addr = advSearch.address.toLowerCase();
+        filtered = filtered.filter(patient =>
+          patient.contactInfo?.address?.street?.toLowerCase().includes(addr) ||
+          patient.contactInfo?.address?.neighborhood?.toLowerCase().includes(addr) ||
+          patient.contactInfo?.address?.city?.toLowerCase().includes(addr)
+        );
+      }
+      if (advSearch.email) {
+        filtered = filtered.filter(patient =>
+          patient.personalInfo?.email?.toLowerCase().includes(advSearch.email.toLowerCase())
+        );
+      }
+      if (advSearch.healthPlanNumber) {
+        filtered = filtered.filter(patient =>
+          patient.healthPlan?.cardNumber?.includes(advSearch.healthPlanNumber)
+        );
+      }
+    }
+
+    // Text search with search type
     if (searchData.term) {
       const term = searchData.term.toLowerCase();
-      filtered = filtered.filter(patient => 
-        patient.personalInfo?.name?.toLowerCase().includes(term) ||
-        patient.personalInfo?.cpf?.includes(term) ||
-        patient.contactInfo?.phones?.[0]?.number?.includes(term) ||
-        patient.contactInfo?.address?.neighborhood?.toLowerCase().includes(term)
-      );
+      const searchType = searchData.searchType || 'all';
+      
+      filtered = filtered.filter(patient => {
+        if (searchType === 'all') {
+          return patient.personalInfo?.name?.toLowerCase().includes(term) ||
+                 patient.personalInfo?.cpf?.includes(term) ||
+                 patient.contactInfo?.phones?.[0]?.number?.includes(term) ||
+                 patient.contactInfo?.address?.neighborhood?.toLowerCase().includes(term) ||
+                 patient.personalInfo?.email?.toLowerCase().includes(term);
+        } else if (searchType === 'name') {
+          return patient.personalInfo?.name?.toLowerCase().includes(term);
+        } else if (searchType === 'cpf') {
+          const termDigits = term.replace(/\D/g, '');
+          const patientCPF = patient.personalInfo?.cpf?.replace(/\D/g, '');
+          return patientCPF?.includes(termDigits);
+        } else if (searchType === 'phone') {
+          const termDigits = term.replace(/\D/g, '');
+          return patient.contactInfo?.phones?.some(phone => 
+            phone.number.replace(/\D/g, '').includes(termDigits)
+          );
+        } else if (searchType === 'address') {
+          return patient.contactInfo?.address?.street?.toLowerCase().includes(term) ||
+                 patient.contactInfo?.address?.neighborhood?.toLowerCase().includes(term) ||
+                 patient.contactInfo?.address?.city?.toLowerCase().includes(term);
+        } else if (searchType === 'email') {
+          return patient.personalInfo?.email?.toLowerCase().includes(term);
+        }
+        return false;
+      });
     }
 
     // Apply filters
@@ -187,6 +335,67 @@ const Patients = () => {
       filtered = filtered.filter(patient => 
         patient.analytics?.frequency === filters.frequency
       );
+    }
+
+    // New filters
+    if (filters.car !== 'all') {
+      filtered = filtered.filter(patient => patient.assignedCar === filters.car);
+    }
+
+    if (filters.confirmationRate !== 'all') {
+      filtered = filtered.filter(patient => {
+        const rate = patient.confirmationTracking?.confirmationRate || 0;
+        if (filters.confirmationRate === 'high') return rate > 0.9;
+        if (filters.confirmationRate === 'medium') return rate >= 0.6 && rate <= 0.9;
+        if (filters.confirmationRate === 'low') return rate < 0.6;
+        return true;
+      });
+    }
+
+    if (filters.riskScore !== 'all') {
+      filtered = filtered.filter(patient => 
+        patient.analytics?.riskScore === filters.riskScore
+      );
+    }
+
+    if (filters.tags && filters.tags.length > 0) {
+      filtered = filtered.filter(patient => 
+        filters.tags.some(tag => patient.tags?.includes(tag))
+      );
+    }
+
+    // Date range filtering
+    if (filters.dateRange !== 'all') {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      
+      filtered = filtered.filter(patient => {
+        const nextDate = patient.nextScheduledDate ? new Date(patient.nextScheduledDate) : null;
+        if (!nextDate) return false;
+        
+        if (filters.dateRange === 'today') {
+          return nextDate.toDateString() === today.toDateString();
+        } else if (filters.dateRange === 'week') {
+          const weekFromNow = new Date(today);
+          weekFromNow.setDate(weekFromNow.getDate() + 7);
+          return nextDate >= today && nextDate <= weekFromNow;
+        } else if (filters.dateRange === 'month') {
+          const monthFromNow = new Date(today);
+          monthFromNow.setMonth(monthFromNow.getMonth() + 1);
+          return nextDate >= today && nextDate <= monthFromNow;
+        } else if (filters.dateRange === 'custom') {
+          const fromDate = filters.customDateFrom ? new Date(filters.customDateFrom) : null;
+          const toDate = filters.customDateTo ? new Date(filters.customDateTo) : null;
+          if (fromDate && toDate) {
+            return nextDate >= fromDate && nextDate <= toDate;
+          } else if (fromDate) {
+            return nextDate >= fromDate;
+          } else if (toDate) {
+            return nextDate <= toDate;
+          }
+        }
+        return true;
+      });
     }
 
     setFilteredPatients(filtered);
