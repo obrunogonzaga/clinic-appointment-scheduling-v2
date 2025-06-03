@@ -42,3 +42,155 @@ body {
   transform: translateY(-4px);
   box-shadow: 0 10px 25px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
 }
+
+/* Enhanced animations */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeInScale {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200px 0;
+  }
+  100% {
+    background-position: calc(200px + 100%) 0;
+  }
+}
+
+@keyframes pulse-soft {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+@keyframes bounce-gentle {
+  0%, 20%, 53%, 80%, 100% {
+    transform: translate3d(0,0,0);
+  }
+  40%, 43% {
+    transform: translate3d(0, -5px, 0);
+  }
+  70% {
+    transform: translate3d(0, -3px, 0);
+  }
+  90% {
+    transform: translate3d(0, -1px, 0);
+  }
+}
+
+/* Animation classes */
+.animate-fade-in-up {
+  animation: fadeInUp 0.5s ease-out;
+}
+
+.animate-fade-in-scale {
+  animation: fadeInScale 0.3s ease-out;
+}
+
+.animate-slide-in-right {
+  animation: slideInRight 0.4s ease-out;
+}
+
+.animate-shimmer {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200px 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+.animate-pulse-soft {
+  animation: pulse-soft 2s ease-in-out infinite;
+}
+
+.animate-bounce-gentle {
+  animation: bounce-gentle 1s ease-in-out infinite;
+}
+
+/* Button interactions */
+.btn-interactive {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  transform-origin: center;
+}
+
+.btn-interactive:hover {
+  transform: translateY(-1px);
+}
+
+.btn-interactive:active {
+  transform: translateY(0) scale(0.98);
+}
+
+/* Drag and drop animations */
+.dragging {
+  transform: rotate(3deg) scale(1.05);
+  box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 10px 10px -5px rgb(0 0 0 / 0.04);
+  z-index: 1000;
+}
+
+.drop-zone-active {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(147, 51, 234, 0.1) 100%);
+  border: 2px dashed #3b82f6;
+  animation: pulse-soft 1s ease-in-out infinite;
+}
+
+/* Loading skeleton */
+.skeleton {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200px 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+/* Smooth scroll */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Focus states */
+.focus-ring {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.focus-ring:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
+}
+
+/* Notification animations */
+.notification-enter {
+  animation: slideInRight 0.3s ease-out;
+}
+
+.notification-exit {
+  animation: fadeInScale 0.2s ease-in reverse;
+}

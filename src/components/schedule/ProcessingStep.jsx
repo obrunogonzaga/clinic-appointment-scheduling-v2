@@ -94,15 +94,49 @@ const ProcessingStep = ({ uploadedFile, onProcessingComplete, onBack, onNext }) 
     <div className="max-w-4xl mx-auto">
       <div className="bg-white rounded-lg shadow-md p-8">
         <div className="text-center mb-8">
-          <Settings className={`mx-auto mb-4 ${processing ? 'animate-spin' : ''}`} size={48} 
-            color={completed ? '#059669' : processing ? '#2563eb' : '#6b7280'} />
+          <div className="relative">
+            <Settings className={`mx-auto mb-4 ${processing ? 'animate-spin' : ''}`} size={48} 
+              color={completed ? '#059669' : processing ? '#2563eb' : '#6b7280'} />
+            {processing && (
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="w-16 h-16 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin"></div>
+              </div>
+            )}
+          </div>
           <h2 className="text-2xl font-bold text-gray-800 mb-2">
             {completed ? 'Processamento Concluído' : processing ? 'Processando Dados' : 'Iniciando Processamento'}
           </h2>
-          <p className="text-gray-600">
+          <p className="text-gray-600 mb-2">
             {uploadedFile?.name}
           </p>
+          {processing && (
+            <div className="flex items-center justify-center">
+              <div className="flex space-x-1">
+                <div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce"></div>
+                <div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                <div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+              </div>
+            </div>
+          )}
         </div>
+
+        {/* Progress Bar */}
+        {processing && (
+          <div className="mb-8">
+            <div className="flex justify-between text-sm text-gray-600 mb-2">
+              <span>Progresso</span>
+              <span>{Math.round((processingSteps.filter(s => s.status === 'completed').length / processingSteps.length) * 100)}%</span>
+            </div>
+            <div className="w-full bg-gray-200 rounded-full h-2">
+              <div 
+                className="bg-blue-600 h-2 rounded-full transition-all duration-500 ease-out"
+                style={{ 
+                  width: `${(processingSteps.filter(s => s.status === 'completed').length / processingSteps.length) * 100}%` 
+                }}
+              />
+            </div>
+          </div>
+        )}
 
         {/* Processing Steps */}
         <div className="space-y-3 mb-8">

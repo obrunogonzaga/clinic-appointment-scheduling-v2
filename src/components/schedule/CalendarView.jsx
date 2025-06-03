@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Clock, MapPin, Phone, User, FileText, Car, Calendar, ArrowLeft, RotateCcw, Move, Edit3, Save, X, Trash2, CheckCircle } from 'lucide-react';
+import { Clock, MapPin, Phone, User, FileText, Car, Calendar, ArrowLeft, RotateCcw, Move, Edit3, Save, X, Trash2, CheckCircle, Loader2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const CalendarView = ({ processedData, onBack }) => {
@@ -9,6 +9,9 @@ const CalendarView = ({ processedData, onBack }) => {
   const [hasChanges, setHasChanges] = useState(false);
   const [editMode, setEditMode] = useState(false);
   const [editedPatient, setEditedPatient] = useState(null);
+  const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [confirming, setConfirming] = useState(false);
 
   // Track if schedule has been modified
   useEffect(() => {
@@ -53,11 +56,13 @@ const CalendarView = ({ processedData, onBack }) => {
     setDraggedPatient({ patient, sourceCarNumber });
     e.dataTransfer.effectAllowed = 'move';
     e.dataTransfer.setData('text/html', e.target.outerHTML);
-    e.target.style.opacity = '0.5';
+    e.target.style.opacity = '0.7';
+    e.target.classList.add('dragging');
   };
 
   const handleDragEnd = (e) => {
     e.target.style.opacity = '1';
+    e.target.classList.remove('dragging');
     setDraggedPatient(null);
   };
 
@@ -118,11 +123,11 @@ const CalendarView = ({ processedData, onBack }) => {
 
   const handleSlotDragOver = (e) => {
     e.preventDefault();
-    e.currentTarget.classList.add('bg-blue-50', 'border-blue-300');
+    e.currentTarget.classList.add('drop-zone-active');
   };
 
   const handleSlotDragLeave = (e) => {
-    e.currentTarget.classList.remove('bg-blue-50', 'border-blue-300');
+    e.currentTarget.classList.remove('drop-zone-active');
   };
 
   const handleReset = () => {
@@ -141,21 +146,32 @@ const CalendarView = ({ processedData, onBack }) => {
     setEditMode(true);
   };
 
-  const handleSaveEdit = () => {
-    // Update the patient in the schedule data
-    const newScheduleData = { ...scheduleData };
-    Object.keys(newScheduleData.cars).forEach(carNumber => {
-      const carData = newScheduleData.cars[carNumber];
-      const patientIndex = carData.findIndex(p => p.id === editedPatient.id);
-      if (patientIndex !== -1) {
-        carData[patientIndex] = { ...editedPatient };
-      }
-    });
+  const handleSaveEdit = async () => {
+    setSaving(true);
     
-    setScheduleData(newScheduleData);
-    setSelectedPatient(editedPatient);
-    setEditMode(false);
-    toast.success(`Dados de ${editedPatient.patientName} atualizados`);
+    // Simulate API call delay
+    await new Promise(resolve => setTimeout(resolve, 800));
+    
+    try {
+      // Update the patient in the schedule data
+      const newScheduleData = { ...scheduleData };
+      Object.keys(newScheduleData.cars).forEach(carNumber => {
+        const carData = newScheduleData.cars[carNumber];
+        const patientIndex = carData.findIndex(p => p.id === editedPatient.id);
+        if (patientIndex !== -1) {
+          carData[patientIndex] = { ...editedPatient };
+        }
+      });
+      
+      setScheduleData(newScheduleData);
+      setSelectedPatient(editedPatient);
+      setEditMode(false);
+      toast.success(`Dados de ${editedPatient.patientName} atualizados`);
+    } catch (error) {
+      toast.error('Erro ao salvar alterações');
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleCancelEdit = () => {
@@ -163,39 +179,61 @@ const CalendarView = ({ processedData, onBack }) => {
     setEditMode(false);
   };
 
-  const handleDeletePatient = () => {
+  const handleDeletePatient = async () => {
     if (window.confirm('Tem certeza que deseja remover este agendamento?')) {
-      const patientName = selectedPatient.patientName;
-      const newScheduleData = { ...scheduleData };
-      Object.keys(newScheduleData.cars).forEach(carNumber => {
-        newScheduleData.cars[carNumber] = newScheduleData.cars[carNumber].filter(
-          p => p.id !== selectedPatient.id
-        );
-      });
+      setDeleting(true);
       
-      setScheduleData(newScheduleData);
-      setSelectedPatient(null);
-      setEditMode(false);
-      toast.success(`Agendamento de ${patientName} removido`);
+      // Simulate API call delay
+      await new Promise(resolve => setTimeout(resolve, 600));
+      
+      try {
+        const patientName = selectedPatient.patientName;
+        const newScheduleData = { ...scheduleData };
+        Object.keys(newScheduleData.cars).forEach(carNumber => {
+          newScheduleData.cars[carNumber] = newScheduleData.cars[carNumber].filter(
+            p => p.id !== selectedPatient.id
+          );
+        });
+        
+        setScheduleData(newScheduleData);
+        setSelectedPatient(null);
+        setEditMode(false);
+        toast.success(`Agendamento de ${patientName} removido`);
+      } catch (error) {
+        toast.error('Erro ao remover agendamento');
+      } finally {
+        setDeleting(false);
+      }
     }
   };
 
-  const handleConfirmPatient = () => {
-    const newScheduleData = { ...scheduleData };
-    Object.keys(newScheduleData.cars).forEach(carNumber => {
-      const carData = newScheduleData.cars[carNumber];
-      const patientIndex = carData.findIndex(p => p.id === selectedPatient.id);
-      if (patientIndex !== -1) {
-        carData[patientIndex] = { 
-          ...carData[patientIndex], 
-          status: 'Confirmado' 
-        };
-      }
-    });
+  const handleConfirmPatient = async () => {
+    setConfirming(true);
     
-    setScheduleData(newScheduleData);
-    setSelectedPatient({ ...selectedPatient, status: 'Confirmado' });
-    toast.success(`${selectedPatient.patientName} confirmado com sucesso`);
+    // Simulate API call delay
+    await new Promise(resolve => setTimeout(resolve, 500));
+    
+    try {
+      const newScheduleData = { ...scheduleData };
+      Object.keys(newScheduleData.cars).forEach(carNumber => {
+        const carData = newScheduleData.cars[carNumber];
+        const patientIndex = carData.findIndex(p => p.id === selectedPatient.id);
+        if (patientIndex !== -1) {
+          carData[patientIndex] = { 
+            ...carData[patientIndex], 
+            status: 'Confirmado' 
+          };
+        }
+      });
+      
+      setScheduleData(newScheduleData);
+      setSelectedPatient({ ...selectedPatient, status: 'Confirmado' });
+      toast.success(`${selectedPatient.patientName} confirmado com sucesso`);
+    } catch (error) {
+      toast.error('Erro ao confirmar paciente');
+    } finally {
+      setConfirming(false);
+    }
   };
 
   const closeModal = () => {
@@ -205,12 +243,12 @@ const CalendarView = ({ processedData, onBack }) => {
   return (
     <div className="max-w-7xl mx-auto">
       {/* Header */}
-      <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+      <div className="bg-white rounded-lg shadow-md p-6 mb-6 animate-fade-in-up">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
             <button
               onClick={onBack}
-              className="flex items-center text-gray-600 hover:text-gray-800 transition-colors"
+              className="flex items-center text-gray-600 hover:text-gray-800 transition-colors btn-interactive"
             >
               <ArrowLeft className="w-5 h-5 mr-2" />
               Voltar
@@ -229,7 +267,7 @@ const CalendarView = ({ processedData, onBack }) => {
             {hasChanges && (
               <button
                 onClick={handleReset}
-                className="flex items-center px-3 py-2 text-orange-600 hover:text-orange-800 hover:bg-orange-50 rounded-lg transition-colors"
+                className="flex items-center px-3 py-2 text-orange-600 hover:text-orange-800 hover:bg-orange-50 rounded-lg transition-colors btn-interactive"
                 title="Desfazer alterações"
               >
                 <RotateCcw className="w-4 h-4 mr-2" />
@@ -250,7 +288,7 @@ const CalendarView = ({ processedData, onBack }) => {
       </div>
 
       {/* Instructions */}
-      <div className="bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 rounded-lg p-4 mb-6">
+      <div className="bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 rounded-lg p-4 mb-6 animate-fade-in-up" style={{animationDelay: '0.1s'}}>
         <div className="flex items-center">
           <Move className="w-5 h-5 text-blue-600 mr-3" />
           <div>
@@ -265,7 +303,7 @@ const CalendarView = ({ processedData, onBack }) => {
 
       {/* Statistics */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 card-hover animate-fade-in-up" style={{animationDelay: '0.2s'}}>
           <div className="flex items-center">
             <Car className="w-8 h-8 text-blue-600 mr-3" />
             <div>
@@ -274,7 +312,7 @@ const CalendarView = ({ processedData, onBack }) => {
             </div>
           </div>
         </div>
-        <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+        <div className="bg-green-50 border border-green-200 rounded-lg p-4 card-hover animate-fade-in-up" style={{animationDelay: '0.3s'}}>
           <div className="flex items-center">
             <User className="w-8 h-8 text-green-600 mr-3" />
             <div>
@@ -283,7 +321,7 @@ const CalendarView = ({ processedData, onBack }) => {
             </div>
           </div>
         </div>
-        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 card-hover animate-fade-in-up" style={{animationDelay: '0.4s'}}>
           <div className="flex items-center">
             <Clock className="w-8 h-8 text-yellow-600 mr-3" />
             <div>
@@ -294,7 +332,7 @@ const CalendarView = ({ processedData, onBack }) => {
             </div>
           </div>
         </div>
-        <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
+        <div className="bg-purple-50 border border-purple-200 rounded-lg p-4 card-hover animate-fade-in-up" style={{animationDelay: '0.5s'}}>
           <div className="flex items-center">
             <FileText className="w-8 h-8 text-purple-600 mr-3" />
             <div>
@@ -306,7 +344,7 @@ const CalendarView = ({ processedData, onBack }) => {
       </div>
 
       {/* Calendar Grid */}
-      <div className="bg-white rounded-lg shadow-md overflow-hidden">
+      <div className="bg-white rounded-lg shadow-md overflow-hidden animate-fade-in-up" style={{animationDelay: '0.6s'}}>
         <div className="grid grid-cols-1 lg:grid-cols-5 min-h-96">
           {/* Time Column */}
           <div className="bg-gray-50 border-r border-gray-200">
@@ -355,7 +393,7 @@ const CalendarView = ({ processedData, onBack }) => {
                         draggable="true"
                         onDragStart={(e) => handleDragStart(e, patient, carNumber)}
                         onDragEnd={handleDragEnd}
-                        className="bg-blue-100 hover:bg-blue-200 border border-blue-300 rounded-lg p-2 h-full cursor-move transition-all duration-200 hover:shadow-md"
+                        className="bg-blue-100 hover:bg-blue-200 border border-blue-300 rounded-lg p-2 h-full cursor-move transition-all duration-200 hover:shadow-md card-hover"
                         onClick={() => handlePatientClick(patient)}
                         title="Arrastar para mover para outro carro/horário"
                       >
@@ -388,8 +426,8 @@ const CalendarView = ({ processedData, onBack }) => {
 
       {/* Patient Details Modal */}
       {selectedPatient && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9000] p-4">
-          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-96 overflow-y-auto">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9000] p-4 animate-fade-in-scale">
+          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-96 overflow-y-auto animate-fade-in-scale">
             <div className="p-6">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-xl font-bold text-gray-800">
@@ -414,7 +452,7 @@ const CalendarView = ({ processedData, onBack }) => {
                         type="text"
                         value={editedPatient.patientName}
                         onChange={(e) => setEditedPatient({...editedPatient, patientName: e.target.value})}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus-ring"
                       />
                     ) : (
                       <div className="flex items-center text-gray-800">
@@ -433,7 +471,7 @@ const CalendarView = ({ processedData, onBack }) => {
                         type="time"
                         value={editedPatient.time}
                         onChange={(e) => setEditedPatient({...editedPatient, time: e.target.value})}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus-ring"
                       />
                     ) : (
                       <div className="flex items-center text-gray-800">
@@ -452,7 +490,7 @@ const CalendarView = ({ processedData, onBack }) => {
                         type="tel"
                         value={editedPatient.phone || ''}
                         onChange={(e) => setEditedPatient({...editedPatient, phone: e.target.value})}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus-ring"
                         placeholder="(XX) XXXXX-XXXX"
                       />
                     ) : (
@@ -482,7 +520,7 @@ const CalendarView = ({ processedData, onBack }) => {
                     <textarea
                       value={editedPatient.address || ''}
                       onChange={(e) => setEditedPatient({...editedPatient, address: e.target.value})}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus-ring"
                       rows="2"
                     />
                   ) : (
@@ -526,10 +564,15 @@ const CalendarView = ({ processedData, onBack }) => {
                     {selectedPatient.status !== 'Confirmado' && !editMode && (
                       <button
                         onClick={handleConfirmPatient}
-                        className="flex items-center px-3 py-1 text-green-600 hover:text-green-800 hover:bg-green-50 rounded-lg transition-colors text-sm"
+                        disabled={confirming || saving || deleting}
+                        className="flex items-center px-3 py-1 text-green-600 hover:text-green-800 hover:bg-green-50 rounded-lg transition-colors text-sm disabled:opacity-50 disabled:cursor-not-allowed btn-interactive"
                       >
-                        <CheckCircle className="w-4 h-4 mr-1" />
-                        Confirmar
+                        {confirming ? (
+                          <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+                        ) : (
+                          <CheckCircle className="w-4 h-4 mr-1" />
+                        )}
+                        {confirming ? 'Confirmando...' : 'Confirmar'}
                       </button>
                     )}
                   </div>
@@ -541,10 +584,15 @@ const CalendarView = ({ processedData, onBack }) => {
                   {!editMode && (
                     <button
                       onClick={handleDeletePatient}
-                      className="flex items-center px-3 py-2 text-red-600 hover:text-red-800 hover:bg-red-50 rounded-lg transition-colors"
+                      disabled={deleting || saving || confirming}
+                      className="flex items-center px-3 py-2 text-red-600 hover:text-red-800 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed btn-interactive"
                     >
-                      <Trash2 className="w-4 h-4 mr-2" />
-                      Remover
+                      {deleting ? (
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      ) : (
+                        <Trash2 className="w-4 h-4 mr-2" />
+                      )}
+                      {deleting ? 'Removendo...' : 'Remover'}
                     </button>
                   )}
                 </div>
@@ -554,29 +602,35 @@ const CalendarView = ({ processedData, onBack }) => {
                     <>
                       <button
                         onClick={handleCancelEdit}
-                        className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
+                        disabled={saving}
+                        className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed btn-interactive"
                       >
                         Cancelar
                       </button>
                       <button
                         onClick={handleSaveEdit}
-                        className="flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                        disabled={saving}
+                        className="flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed btn-interactive"
                       >
-                        <Save className="w-4 h-4 mr-2" />
-                        Salvar
+                        {saving ? (
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        ) : (
+                          <Save className="w-4 h-4 mr-2" />
+                        )}
+                        {saving ? 'Salvando...' : 'Salvar'}
                       </button>
                     </>
                   ) : (
                     <>
                       <button
                         onClick={closeModal}
-                        className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
+                        className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors btn-interactive"
                       >
                         Fechar
                       </button>
                       <button
                         onClick={handleEditMode}
-                        className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                        className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors btn-interactive"
                       >
                         <Edit3 className="w-4 h-4 mr-2" />
                         Editar
