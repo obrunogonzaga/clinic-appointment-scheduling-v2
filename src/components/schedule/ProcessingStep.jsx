@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Settings, Check, AlertCircle, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
+import toast from 'react-hot-toast';
 
 const ProcessingStep = ({ uploadedFile, onProcessingComplete, onBack, onNext }) => {
   const [processing, setProcessing] = useState(false);
@@ -64,6 +65,7 @@ const ProcessingStep = ({ uploadedFile, onProcessingComplete, onBack, onNext }) 
     setProcessing(false);
     setCompleted(true);
     onProcessingComplete(mockResults);
+    toast.success(`Processamento concluído! ${mockResults.validRecords} agendamentos processados.`);
   };
 
   const getStepIcon = (status) => {

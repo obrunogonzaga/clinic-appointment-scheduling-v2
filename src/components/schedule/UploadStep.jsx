@@ -1,5 +1,6 @@
 import React, { useRef, useState } from 'react';
 import { Upload, FileSpreadsheet, Check, AlertCircle, X } from 'lucide-react';
+import toast from 'react-hot-toast';
 
 const UploadStep = ({ onFileUpload, uploadedFile, onNext }) => {
   const fileInputRef = useRef(null);
@@ -46,17 +47,22 @@ const UploadStep = ({ onFileUpload, uploadedFile, onNext }) => {
     const fileExtension = file.name.toLowerCase().substring(file.name.lastIndexOf('.'));
     
     if (!validTypes.includes(file.type) && !validExtensions.includes(fileExtension)) {
-      setError('Formato de arquivo inválido. Aceitos: .xlsx, .xls, .csv');
+      const errorMsg = 'Formato de arquivo inválido. Aceitos: .xlsx, .xls, .csv';
+      setError(errorMsg);
+      toast.error(errorMsg);
       return;
     }
 
     // Validate file size (max 10MB)
     if (file.size > 10 * 1024 * 1024) {
-      setError('Arquivo muito grande. Tamanho máximo: 10MB');
+      const errorMsg = 'Arquivo muito grande. Tamanho máximo: 10MB';
+      setError(errorMsg);
+      toast.error(errorMsg);
       return;
     }
 
     onFileUpload(file);
+    toast.success(`Arquivo ${file.name} carregado com sucesso!`);
   };
 
   const removeFile = () => {

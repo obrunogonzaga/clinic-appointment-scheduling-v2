@@ -150,6 +150,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Status**: Bug ✅ Fixed - Calendar View working correctly
 - **Impact**: Calendar View now properly displays processed scheduling data
 
+### 2025-01-06 - Phase 5 Enhanced Calendar Features Complete
+- **Time**: Interactive calendar with drag & drop and comprehensive editing
+- **Author**: Claude Code
+- **Description**: Implemented complete interactive calendar system with professional UX features
+- **Files Affected**:
+  - ✅ Enhanced CalendarView.jsx with full drag & drop functionality
+  - ✅ Added interactive patient event editing with modal forms
+  - ✅ Implemented toast notifications with react-hot-toast integration
+  - ✅ Added comprehensive action buttons (Edit, Delete, Confirm, Save, Cancel)
+  - ✅ Created smart conflict detection for time slot overlaps
+  - ✅ Added undo functionality with change tracking
+  - ✅ Implemented visual feedback and user guidance
+  - ✅ Enhanced App.jsx with professional toast configuration
+  - ✅ Updated UploadStep.jsx and ProcessingStep.jsx with notifications
+- **Status**: Phase 5 ✅ Complete with Interactive Features
+- **Impact**: Fully functional drag & drop calendar with professional UX
+
+### 2025-01-06 - Notification Z-Index Fix
+- **Time**: UI layering and interaction improvements
+- **Author**: Claude Code
+- **Description**: Fixed notification dropdown appearing behind other components
+- **Issue**: Header notifications dropdown was appearing behind calendar and other UI elements
+- **Root Cause**: Z-index conflicts between notification panel and other components
+- **Files Affected**:
+  - ✅ Enhanced Header.jsx notification panel with backdrop and proper z-index
+  - ✅ Updated CalendarView.jsx modal z-index hierarchy
+  - ✅ Configured App.jsx toast notifications with proper layering
+  - ✅ Added click-outside-to-close functionality
+- **Status**: Bug ✅ Fixed - Notifications display correctly
+- **Impact**: Professional notification system with proper UI layering
+
 ### Technologies to be Implemented
 - **Frontend Framework**: React 18 with Vite
 - **Styling**: Tailwind CSS

@@ -27,7 +27,7 @@ const Header = () => {
   const currentItem = menuItems.find(item => item.path === currentPath);
 
   return (
-    <header className="bg-white/80 backdrop-blur-sm border-b border-gray-200/50 px-6 py-4 shadow-sm">
+    <header className="bg-white/80 backdrop-blur-sm border-b border-gray-200/50 px-6 py-4 shadow-sm relative z-[9000]">
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-3xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">
@@ -63,7 +63,14 @@ const Header = () => {
             </button>
 
             {showNotifications && (
-              <div className="absolute right-0 mt-3 w-80 bg-white/95 backdrop-blur-sm rounded-xl shadow-xl border border-gray-200/50 z-50 overflow-hidden">
+              <>
+                {/* Backdrop */}
+                <div 
+                  className="fixed inset-0 z-[9998]" 
+                  onClick={() => setShowNotifications(false)}
+                ></div>
+                {/* Notifications Panel */}
+                <div className="absolute right-0 mt-3 w-80 bg-white rounded-xl shadow-2xl border border-gray-200 z-[9999] overflow-hidden">
                 <div className="p-4 border-b border-gray-200/50 bg-gradient-to-r from-blue-50 to-purple-50">
                   <h3 className="font-bold text-gray-800">Notificações</h3>
                   <p className="text-xs text-gray-500 mt-1">{notifications.length} novas</p>
@@ -89,6 +96,7 @@ const Header = () => {
                   ))}
                 </div>
               </div>
+              </>
             )}
           </div>
 

@@ -1,8 +1,19 @@
-import React, { useState } from 'react';
-import { Clock, MapPin, Phone, User, FileText, Car, Calendar, ArrowLeft } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Clock, MapPin, Phone, User, FileText, Car, Calendar, ArrowLeft, RotateCcw, Move, Edit3, Save, X, Trash2, CheckCircle } from 'lucide-react';
+import toast from 'react-hot-toast';
 
 const CalendarView = ({ processedData, onBack }) => {
   const [selectedPatient, setSelectedPatient] = useState(null);
+  const [draggedPatient, setDraggedPatient] = useState(null);
+  const [scheduleData, setScheduleData] = useState(processedData);
+  const [hasChanges, setHasChanges] = useState(false);
+  const [editMode, setEditMode] = useState(false);
+  const [editedPatient, setEditedPatient] = useState(null);
+
+  // Track if schedule has been modified
+  useEffect(() => {
+    setHasChanges(JSON.stringify(scheduleData) !== JSON.stringify(processedData));
+  }, [scheduleData, processedData]);
 
 
   if (!processedData || !processedData.cars || typeof processedData.cars !== 'object') {
@@ -24,7 +35,7 @@ const CalendarView = ({ processedData, onBack }) => {
   const timeSlots = generateTimeSlots();
 
   const getPatientAtTime = (carNumber, timeSlot) => {
-    const carData = processedData.cars[carNumber];
+    const carData = scheduleData.cars[carNumber];
     
     // Ensure carData is an array
     if (!Array.isArray(carData)) {
@@ -37,8 +48,154 @@ const CalendarView = ({ processedData, onBack }) => {
     });
   };
 
+  // Drag and Drop handlers
+  const handleDragStart = (e, patient, sourceCarNumber) => {
+    setDraggedPatient({ patient, sourceCarNumber });
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/html', e.target.outerHTML);
+    e.target.style.opacity = '0.5';
+  };
+
+  const handleDragEnd = (e) => {
+    e.target.style.opacity = '1';
+    setDraggedPatient(null);
+  };
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+  };
+
+  const handleDrop = (e, targetCarNumber, targetTimeSlot) => {
+    e.preventDefault();
+    
+    if (!draggedPatient) return;
+    
+    const { patient, sourceCarNumber } = draggedPatient;
+    
+    // Don't allow dropping on occupied slots
+    const existingPatient = getPatientAtTime(targetCarNumber, targetTimeSlot);
+    if (existingPatient && existingPatient.id !== patient.id) {
+      toast.error('Este horário já está ocupado!');
+      return;
+    }
+    
+    // Don't allow dropping on the same slot
+    if (sourceCarNumber === targetCarNumber && patient.time === targetTimeSlot) {
+      return;
+    }
+    
+    // Update the schedule data
+    const newScheduleData = { ...scheduleData };
+    
+    // Remove patient from source car
+    newScheduleData.cars[sourceCarNumber] = newScheduleData.cars[sourceCarNumber].filter(
+      p => p.id !== patient.id
+    );
+    
+    // Add patient to target car with new time
+    const updatedPatient = { ...patient, time: targetTimeSlot };
+    if (!newScheduleData.cars[targetCarNumber]) {
+      newScheduleData.cars[targetCarNumber] = [];
+    }
+    newScheduleData.cars[targetCarNumber].push(updatedPatient);
+    
+    setScheduleData(newScheduleData);
+    setDraggedPatient(null);
+    
+    // Show success toast
+    const carChange = sourceCarNumber !== targetCarNumber;
+    const timeChange = patient.time !== targetTimeSlot;
+    
+    if (carChange && timeChange) {
+      toast.success(`${patient.patientName} movido para ${targetCarNumber} às ${targetTimeSlot}`);
+    } else if (carChange) {
+      toast.success(`${patient.patientName} movido para ${targetCarNumber}`);
+    } else if (timeChange) {
+      toast.success(`Horário de ${patient.patientName} alterado para ${targetTimeSlot}`);
+    }
+  };
+
+  const handleSlotDragOver = (e) => {
+    e.preventDefault();
+    e.currentTarget.classList.add('bg-blue-50', 'border-blue-300');
+  };
+
+  const handleSlotDragLeave = (e) => {
+    e.currentTarget.classList.remove('bg-blue-50', 'border-blue-300');
+  };
+
+  const handleReset = () => {
+    setScheduleData(processedData);
+    setHasChanges(false);
+    toast.success('Agenda restaurada para o estado original');
+  };
+
   const handlePatientClick = (patient) => {
     setSelectedPatient(patient);
+    setEditedPatient({ ...patient });
+    setEditMode(false);
+  };
+
+  const handleEditMode = () => {
+    setEditMode(true);
+  };
+
+  const handleSaveEdit = () => {
+    // Update the patient in the schedule data
+    const newScheduleData = { ...scheduleData };
+    Object.keys(newScheduleData.cars).forEach(carNumber => {
+      const carData = newScheduleData.cars[carNumber];
+      const patientIndex = carData.findIndex(p => p.id === editedPatient.id);
+      if (patientIndex !== -1) {
+        carData[patientIndex] = { ...editedPatient };
+      }
+    });
+    
+    setScheduleData(newScheduleData);
+    setSelectedPatient(editedPatient);
+    setEditMode(false);
+    toast.success(`Dados de ${editedPatient.patientName} atualizados`);
+  };
+
+  const handleCancelEdit = () => {
+    setEditedPatient({ ...selectedPatient });
+    setEditMode(false);
+  };
+
+  const handleDeletePatient = () => {
+    if (window.confirm('Tem certeza que deseja remover este agendamento?')) {
+      const patientName = selectedPatient.patientName;
+      const newScheduleData = { ...scheduleData };
+      Object.keys(newScheduleData.cars).forEach(carNumber => {
+        newScheduleData.cars[carNumber] = newScheduleData.cars[carNumber].filter(
+          p => p.id !== selectedPatient.id
+        );
+      });
+      
+      setScheduleData(newScheduleData);
+      setSelectedPatient(null);
+      setEditMode(false);
+      toast.success(`Agendamento de ${patientName} removido`);
+    }
+  };
+
+  const handleConfirmPatient = () => {
+    const newScheduleData = { ...scheduleData };
+    Object.keys(newScheduleData.cars).forEach(carNumber => {
+      const carData = newScheduleData.cars[carNumber];
+      const patientIndex = carData.findIndex(p => p.id === selectedPatient.id);
+      if (patientIndex !== -1) {
+        carData[patientIndex] = { 
+          ...carData[patientIndex], 
+          status: 'Confirmado' 
+        };
+      }
+    });
+    
+    setScheduleData(newScheduleData);
+    setSelectedPatient({ ...selectedPatient, status: 'Confirmado' });
+    toast.success(`${selectedPatient.patientName} confirmado com sucesso`);
   };
 
   const closeModal = () => {
@@ -63,12 +220,23 @@ const CalendarView = ({ processedData, onBack }) => {
                 Agenda de Coletas
               </h1>
               <p className="text-gray-600">
-                {processedData.validRecords} agendamentos em {cars.length} carros
+                {Object.values(scheduleData.cars).flat().length} agendamentos em {cars.length} carros
               </p>
             </div>
           </div>
           
           <div className="flex items-center space-x-4">
+            {hasChanges && (
+              <button
+                onClick={handleReset}
+                className="flex items-center px-3 py-2 text-orange-600 hover:text-orange-800 hover:bg-orange-50 rounded-lg transition-colors"
+                title="Desfazer alterações"
+              >
+                <RotateCcw className="w-4 h-4 mr-2" />
+                Desfazer
+              </button>
+            )}
+            
             <div className="bg-blue-50 border border-blue-200 rounded-lg px-4 py-2">
               <div className="flex items-center text-blue-800">
                 <Calendar className="w-5 h-5 mr-2" />
@@ -77,6 +245,20 @@ const CalendarView = ({ processedData, onBack }) => {
                 </span>
               </div>
             </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Instructions */}
+      <div className="bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 rounded-lg p-4 mb-6">
+        <div className="flex items-center">
+          <Move className="w-5 h-5 text-blue-600 mr-3" />
+          <div>
+            <h3 className="text-blue-800 font-medium">Arrastar e Soltar</h3>
+            <p className="text-blue-600 text-sm">
+              Clique e arraste os pacientes para reorganizar entre carros e horários. 
+              {hasChanges && <span className="font-medium"> Você tem alterações não salvas.</span>}
+            </p>
           </div>
         </div>
       </div>
@@ -96,7 +278,7 @@ const CalendarView = ({ processedData, onBack }) => {
           <div className="flex items-center">
             <User className="w-8 h-8 text-green-600 mr-3" />
             <div>
-              <p className="text-green-800 font-semibold">{processedData.validRecords}</p>
+              <p className="text-green-800 font-semibold">{Object.values(scheduleData.cars).flat().length}</p>
               <p className="text-green-600 text-sm">Pacientes</p>
             </div>
           </div>
@@ -106,7 +288,7 @@ const CalendarView = ({ processedData, onBack }) => {
             <Clock className="w-8 h-8 text-yellow-600 mr-3" />
             <div>
               <p className="text-yellow-800 font-semibold">
-                {Math.round(processedData.validRecords * 40 / 60)}h
+                {Math.round(Object.values(scheduleData.cars).flat().length * 40 / 60)}h
               </p>
               <p className="text-yellow-600 text-sm">Tempo Total</p>
             </div>
@@ -152,7 +334,7 @@ const CalendarView = ({ processedData, onBack }) => {
                     {carNumber}
                   </div>
                   <div className="text-xs text-blue-600">
-                    {processedData.cars[carNumber].length} pacientes
+                    {(scheduleData.cars[carNumber] || []).length} pacientes
                   </div>
                 </div>
               </div>
@@ -163,12 +345,19 @@ const CalendarView = ({ processedData, onBack }) => {
                 return (
                   <div
                     key={`${carNumber}-${slot}`}
-                    className="h-20 border-b border-gray-100 p-2 relative"
+                    className="h-20 border-b border-gray-100 p-2 relative transition-colors duration-200"
+                    onDragOver={handleSlotDragOver}
+                    onDragLeave={handleSlotDragLeave}
+                    onDrop={(e) => handleDrop(e, carNumber, slot)}
                   >
-                    {patient && (
+                    {patient ? (
                       <div
-                        className="bg-blue-100 hover:bg-blue-200 border border-blue-300 rounded-lg p-2 h-full cursor-pointer transition-all duration-200 hover:shadow-md"
+                        draggable="true"
+                        onDragStart={(e) => handleDragStart(e, patient, carNumber)}
+                        onDragEnd={handleDragEnd}
+                        className="bg-blue-100 hover:bg-blue-200 border border-blue-300 rounded-lg p-2 h-full cursor-move transition-all duration-200 hover:shadow-md"
                         onClick={() => handlePatientClick(patient)}
+                        title="Arrastar para mover para outro carro/horário"
                       >
                         <div className="text-xs font-medium text-blue-800 truncate">
                           {patient.patientName}
@@ -177,9 +366,16 @@ const CalendarView = ({ processedData, onBack }) => {
                           <MapPin className="w-3 h-3 mr-1" />
                           <span className="truncate">{patient.address}</span>
                         </div>
-                        <div className="text-xs text-blue-500 mt-1">
-                          {patient.exams.length} exames
+                        <div className="text-xs text-blue-500 mt-1 flex items-center justify-between">
+                          <span>{patient.exams.length} exames</span>
+                          <span className="text-gray-400">⋮⋮</span>
                         </div>
+                      </div>
+                    ) : (
+                      <div className="h-full flex items-center justify-center text-gray-300 text-xs border-2 border-dashed border-transparent rounded-lg transition-all duration-200">
+                        <span className="opacity-0 group-hover:opacity-100">
+                          Soltar aqui
+                        </span>
                       </div>
                     )}
                   </div>
@@ -192,20 +388,18 @@ const CalendarView = ({ processedData, onBack }) => {
 
       {/* Patient Details Modal */}
       {selectedPatient && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9000] p-4">
           <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-96 overflow-y-auto">
             <div className="p-6">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-xl font-bold text-gray-800">
-                  Detalhes do Paciente
+                  {editMode ? 'Editar Paciente' : 'Detalhes do Paciente'}
                 </h3>
                 <button
                   onClick={closeModal}
                   className="text-gray-400 hover:text-gray-600"
                 >
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
+                  <X className="w-6 h-6" />
                 </button>
               </div>
 
@@ -215,30 +409,58 @@ const CalendarView = ({ processedData, onBack }) => {
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       Nome do Paciente
                     </label>
-                    <div className="flex items-center text-gray-800">
-                      <User className="w-4 h-4 mr-2 text-gray-500" />
-                      {selectedPatient.patientName}
-                    </div>
+                    {editMode ? (
+                      <input
+                        type="text"
+                        value={editedPatient.patientName}
+                        onChange={(e) => setEditedPatient({...editedPatient, patientName: e.target.value})}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      />
+                    ) : (
+                      <div className="flex items-center text-gray-800">
+                        <User className="w-4 h-4 mr-2 text-gray-500" />
+                        {selectedPatient.patientName}
+                      </div>
+                    )}
                   </div>
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       Horário
                     </label>
-                    <div className="flex items-center text-gray-800">
-                      <Clock className="w-4 h-4 mr-2 text-gray-500" />
-                      {selectedPatient.time} ({selectedPatient.duration} min)
-                    </div>
+                    {editMode ? (
+                      <input
+                        type="time"
+                        value={editedPatient.time}
+                        onChange={(e) => setEditedPatient({...editedPatient, time: e.target.value})}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      />
+                    ) : (
+                      <div className="flex items-center text-gray-800">
+                        <Clock className="w-4 h-4 mr-2 text-gray-500" />
+                        {selectedPatient.time} ({selectedPatient.duration} min)
+                      </div>
+                    )}
                   </div>
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       Telefone
                     </label>
-                    <div className="flex items-center text-gray-800">
-                      <Phone className="w-4 h-4 mr-2 text-gray-500" />
-                      {selectedPatient.phone || 'Não informado'}
-                    </div>
+                    {editMode ? (
+                      <input
+                        type="tel"
+                        value={editedPatient.phone || ''}
+                        onChange={(e) => setEditedPatient({...editedPatient, phone: e.target.value})}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        placeholder="(XX) XXXXX-XXXX"
+                      />
+                    ) : (
+                      <div className="flex items-center text-gray-800">
+                        <Phone className="w-4 h-4 mr-2 text-gray-500" />
+                        {selectedPatient.phone || 'Não informado'}
+                      </div>
+                    )}
                   </div>
 
                   <div>
@@ -256,10 +478,19 @@ const CalendarView = ({ processedData, onBack }) => {
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Endereço
                   </label>
-                  <div className="flex items-center text-gray-800">
-                    <MapPin className="w-4 h-4 mr-2 text-gray-500" />
-                    {selectedPatient.address}
-                  </div>
+                  {editMode ? (
+                    <textarea
+                      value={editedPatient.address || ''}
+                      onChange={(e) => setEditedPatient({...editedPatient, address: e.target.value})}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      rows="2"
+                    />
+                  ) : (
+                    <div className="flex items-center text-gray-800">
+                      <MapPin className="w-4 h-4 mr-2 text-gray-500" />
+                      {selectedPatient.address}
+                    </div>
+                  )}
                 </div>
 
                 <div>
@@ -284,26 +515,75 @@ const CalendarView = ({ processedData, onBack }) => {
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Status
                   </label>
-                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                    selectedPatient.status === 'Confirmado' 
-                      ? 'bg-green-100 text-green-800'
-                      : 'bg-yellow-100 text-yellow-800'
-                  }`}>
-                    {selectedPatient.status}
-                  </span>
+                  <div className="flex items-center space-x-3">
+                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                      selectedPatient.status === 'Confirmado' 
+                        ? 'bg-green-100 text-green-800'
+                        : 'bg-yellow-100 text-yellow-800'
+                    }`}>
+                      {selectedPatient.status}
+                    </span>
+                    {selectedPatient.status !== 'Confirmado' && !editMode && (
+                      <button
+                        onClick={handleConfirmPatient}
+                        className="flex items-center px-3 py-1 text-green-600 hover:text-green-800 hover:bg-green-50 rounded-lg transition-colors text-sm"
+                      >
+                        <CheckCircle className="w-4 h-4 mr-1" />
+                        Confirmar
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
 
-              <div className="mt-6 flex justify-end space-x-3">
-                <button
-                  onClick={closeModal}
-                  className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
-                >
-                  Fechar
-                </button>
-                <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
-                  Editar Agendamento
-                </button>
+              <div className="mt-6 flex justify-between">
+                <div className="flex space-x-2">
+                  {!editMode && (
+                    <button
+                      onClick={handleDeletePatient}
+                      className="flex items-center px-3 py-2 text-red-600 hover:text-red-800 hover:bg-red-50 rounded-lg transition-colors"
+                    >
+                      <Trash2 className="w-4 h-4 mr-2" />
+                      Remover
+                    </button>
+                  )}
+                </div>
+                
+                <div className="flex space-x-3">
+                  {editMode ? (
+                    <>
+                      <button
+                        onClick={handleCancelEdit}
+                        className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
+                      >
+                        Cancelar
+                      </button>
+                      <button
+                        onClick={handleSaveEdit}
+                        className="flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                      >
+                        <Save className="w-4 h-4 mr-2" />
+                        Salvar
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <button
+                        onClick={closeModal}
+                        className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
+                      >
+                        Fechar
+                      </button>
+                      <button
+                        onClick={handleEditMode}
+                        className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                      >
+                        <Edit3 className="w-4 h-4 mr-2" />
+                        Editar
+                      </button>
+                    </>
+                  )}
+                </div>
               </div>
             </div>
           </div>
