@@ -40,6 +40,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Confirmation Rate Calculation**: Dynamic filtering based on confirmation percentage
 - **Mock Data Enhancement**: Added more realistic patient data for testing
 
+#### Added - PatientModal Component
+- **Comprehensive Patient View**: Detailed modal with complete patient information
+- **5 Tabbed Interface**:
+  - Informações: Contact details, preferences, collection statistics
+  - Histórico: Complete collection history with status tracking
+  - Plano de Saúde: Health insurance details and coverage
+  - Análises: Analytics dashboard with behavior patterns and insights
+  - Comunicação: Communication history and quick action buttons
+- **Edit Mode**: Inline editing with save/cancel functionality
+- **Confirmation System**: Dedicated modal for confirming appointments with notes
+- **Quick Actions**: Call, SMS, WhatsApp, and confirmation buttons
+- **Visual Features**:
+  - Gradient header with patient information
+  - Color-coded status badges and risk indicators
+  - Tag system display (VIP, elderly, priority, etc.)
+  - Responsive scrollable content
+- **Data Integration**: Shows collection history, family groups, and analytics
+
+#### Updated - Patients Page Integration
+- **Modal Integration**: Connected PatientModal to patient list clicks
+- **State Management**: Added modal open/close state handling
+- **Patient Updates**: Implemented patient data update functionality
+- **Action Handlers**: Added handlers for all patient actions from modal
+- **Enhanced Mock Data**: Added collection history, confirmation attempts, and analytics data
+
 ## [0.1.0] - 2025-01-06
 
 ### Added

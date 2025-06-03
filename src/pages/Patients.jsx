@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import PatientSearch from '../components/patients/PatientSearch';
 import PatientList from '../components/patients/PatientList';
+import PatientModal from '../components/patients/PatientModal';
 import toast from 'react-hot-toast';
 
 const Patients = () => {
@@ -9,6 +10,7 @@ const Patients = () => {
   const [loading, setLoading] = useState(true);
   const [searchFilters, setSearchFilters] = useState({});
   const [selectedPatient, setSelectedPatient] = useState(null);
+  const [showPatientModal, setShowPatientModal] = useState(false);
 
   // Mock patient data - In real app, this would come from an API
   const mockPatients = [
@@ -20,7 +22,8 @@ const Patients = () => {
         birthDate: "1985-03-15",
         gender: "F",
         email: "ana.costa@email.com",
-        preferredContactMethod: "sms"
+        preferredContactMethod: "sms",
+        preferredContactTime: { start: "09:00", end: "18:00" }
       },
       contactInfo: {
         phones: [
@@ -41,15 +44,59 @@ const Patients = () => {
       confirmationTracking: {
         confirmationRate: 0.89,
         totalAppointments: 12,
-        confirmedAppointments: 11
+        confirmedAppointments: 11,
+        averageConfirmationTime: "24h",
+        confirmationAttempts: [
+          {
+            date: "2025-01-04T14:00:00Z",
+            method: "sms",
+            status: "no_response",
+            operator: "Sistema"
+          },
+          {
+            date: "2025-01-04T15:30:00Z",
+            method: "phone",
+            status: "confirmed",
+            operator: "Maria Santos",
+            notes: "Paciente confirmou horário"
+          }
+        ]
       },
       analytics: {
         frequency: "regular",
         riskScore: "low",
         totalCollections: 12,
         lastCollectionDate: "2025-01-05",
-        noShowRate: 0.05
+        noShowRate: 0.05,
+        averageExamsPerVisit: 3.2,
+        seasonalPattern: "consistent",
+        rescheduleRate: 0.10
       },
+      collectionHistory: [
+        {
+          id: "collection_001",
+          date: "2025-01-05",
+          time: "08:30",
+          car: "CARRO 1",
+          driver: "João Silva",
+          status: "completed",
+          exams: ["Hemograma", "Glicose", "Colesterol"],
+          duration: 35,
+          confirmationTimestamp: "2025-01-04T15:30:00Z",
+          completionTimestamp: "2025-01-05T08:35:00Z",
+          notes: "Coleta realizada sem intercorrências"
+        },
+        {
+          id: "collection_002",
+          date: "2024-12-15",
+          time: "09:00",
+          car: "CARRO 2",
+          driver: "Pedro Santos",
+          status: "completed",
+          exams: ["TSH", "T4 Livre", "T3"],
+          duration: 30
+        }
+      ],
       nextScheduledDate: "2025-01-15",
       status: "confirmed",
       tags: ["regular"],
@@ -75,7 +122,10 @@ const Patients = () => {
       },
       healthPlan: {
         provider: "Unimed",
-        planType: "Standard"
+        planType: "Standard",
+        cardNumber: "456789123",
+        coverage: ["laboratory", "home_collection"],
+        copay: 0
       },
       confirmationTracking: {
         confirmationRate: 0.95,
@@ -86,7 +136,19 @@ const Patients = () => {
         frequency: "frequent",
         riskScore: "low",
         totalCollections: 20,
-        lastCollectionDate: "2025-01-03"
+        lastCollectionDate: "2025-01-03",
+        averageExamsPerVisit: 4.5,
+        seasonalPattern: "winter_higher",
+        noShowRate: 0.02,
+        rescheduleRate: 0.05
+      },
+      familyGroup: {
+        groupId: "family_santos_001",
+        members: [
+          { patientId: "patient_006", relation: "spouse", name: "Maria Santos" },
+          { patientId: "patient_007", relation: "child", name: "Pedro Santos Jr." }
+        ],
+        coordinatedScheduling: true
       },
       nextScheduledDate: "2025-01-20",
       status: "confirmed",
@@ -131,6 +193,19 @@ const Patients = () => {
       preferences: {
         specialRequirements: "Paciente com dificuldade de acesso - 3º andar sem elevador"
       },
+      collectionHistory: [
+        {
+          id: "collection_003",
+          date: "2024-12-20",
+          time: "09:00",
+          car: "CARRO 3",
+          driver: "Carlos Mendes",
+          status: "completed",
+          exams: ["Hemograma", "TSH", "T4 Livre"],
+          duration: 30,
+          notes: "Coleta realizada com sucesso"
+        }
+      ],
       updatedAt: "2025-01-04T09:15:00Z"
     },
     {
@@ -404,8 +479,56 @@ const Patients = () => {
   // Handle patient selection
   const handlePatientClick = (patient) => {
     setSelectedPatient(patient);
-    toast.success(`Visualizando perfil de ${patient.personalInfo?.name}`);
-    // In real app, this would open a detailed patient modal or navigate to patient profile
+    setShowPatientModal(true);
+  };
+
+  // Handle patient update
+  const handlePatientUpdate = (updatedPatient) => {
+    const updatedPatients = patients.map(p => 
+      p.id === updatedPatient.id ? updatedPatient : p
+    );
+    setPatients(updatedPatients);
+    setSelectedPatient(updatedPatient);
+    
+    // Re-apply filters
+    handleSearch({ 
+      term: '', 
+      searchType: 'all',
+      advancedSearch: {},
+      filters: searchFilters 
+    });
+  };
+
+  // Handle patient actions from modal
+  const handlePatientAction = (patientId, action, data) => {
+    const patient = patients.find(p => p.id === patientId);
+    const patientName = patient?.personalInfo?.name || 'paciente';
+    
+    switch (action) {
+      case 'call':
+        toast.success(`Iniciando ligação para ${patientName}`);
+        break;
+      case 'sms':
+        toast.success(`Enviando SMS para ${patientName}`);
+        break;
+      case 'whatsapp':
+        toast.success(`Abrindo WhatsApp para ${patientName}`);
+        break;
+      case 'confirm':
+        toast.success(`Coleta confirmada para ${patientName}`);
+        // Update patient status
+        handlePatientUpdate({ ...patient, status: 'confirmed' });
+        break;
+      case 'schedule':
+        toast.success(`Abrindo agenda para ${patientName}`);
+        // Navigate to schedule
+        break;
+      case 'export':
+        toast.success(`Exportando dados de ${patientName}`);
+        break;
+      default:
+        toast.info(`Ação "${action}" para ${patientName}`);
+    }
   };
 
   // Handle quick actions
@@ -456,20 +579,17 @@ const Patients = () => {
         totalCount={patients.length}
       />
 
-      {/* Selected Patient Debug Info */}
-      {selectedPatient && (
-        <div className="fixed bottom-4 right-4 bg-blue-600 text-white p-4 rounded-lg shadow-lg max-w-sm animate-fade-in-scale">
-          <h4 className="font-semibold">Paciente Selecionado</h4>
-          <p className="text-sm">{selectedPatient.personalInfo?.name}</p>
-          <p className="text-xs opacity-75">{selectedPatient.personalInfo?.cpf}</p>
-          <button
-            onClick={() => setSelectedPatient(null)}
-            className="mt-2 px-3 py-1 bg-blue-500 rounded text-xs hover:bg-blue-400 transition-colors btn-interactive"
-          >
-            Fechar
-          </button>
-        </div>
-      )}
+      {/* Patient Modal */}
+      <PatientModal
+        patient={selectedPatient}
+        isOpen={showPatientModal}
+        onClose={() => {
+          setShowPatientModal(false);
+          setSelectedPatient(null);
+        }}
+        onUpdate={handlePatientUpdate}
+        onAction={handlePatientAction}
+      />
     </div>
   );
 };
