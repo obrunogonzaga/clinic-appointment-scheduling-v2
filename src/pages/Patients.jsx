@@ -2,6 +2,9 @@ import React, { useState, useEffect } from 'react';
 import PatientSearch from '../components/patients/PatientSearch';
 import PatientList from '../components/patients/PatientList';
 import PatientModal from '../components/patients/PatientModal';
+import PatientStats from '../components/patients/PatientStats';
+import PatientFilters from '../components/patients/PatientFilters';
+import { BarChart3, Filter } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const Patients = () => {
@@ -11,6 +14,8 @@ const Patients = () => {
   const [searchFilters, setSearchFilters] = useState({});
   const [selectedPatient, setSelectedPatient] = useState(null);
   const [showPatientModal, setShowPatientModal] = useState(false);
+  const [showStats, setShowStats] = useState(false);
+  const [showFilters, setShowFilters] = useState(false);
 
   // Mock patient data - In real app, this would come from an API
   const mockPatients = [
@@ -307,8 +312,11 @@ const Patients = () => {
   }, []);
 
   // Handle search and filtering
-  const handleSearch = (searchData) => {
+  const handleSearch = (searchData, additionalFilters = {}) => {
     let filtered = patients;
+    
+    // Merge filters from search and PatientFilters components
+    const allFilters = { ...searchData.filters, ...additionalFilters };
 
     // Advanced search fields
     const advSearch = searchData.advancedSearch;
@@ -388,7 +396,7 @@ const Patients = () => {
     }
 
     // Apply filters
-    const filters = searchData.filters;
+    const filters = allFilters || searchData.filters || {};
     
     if (filters.status !== 'all') {
       filtered = filtered.filter(patient => patient.status === filters.status);
@@ -474,6 +482,30 @@ const Patients = () => {
     }
 
     setFilteredPatients(filtered);
+    setSearchFilters(allFilters || searchData.filters || {});
+  };
+  
+  // Handle filter changes from PatientFilters component
+  const handleFilterChange = (newFilters) => {
+    setSearchFilters(newFilters);
+    handleSearch({ term: '', searchType: 'all', advancedSearch: {}, filters: newFilters });
+  };
+  
+  // Reset all filters
+  const handleResetFilters = () => {
+    const resetFilters = {
+      status: 'all',
+      dateRange: 'all',
+      location: 'all',
+      healthPlan: 'all',
+      frequency: 'all',
+      car: 'all',
+      confirmationRate: 'all',
+      riskScore: 'all',
+      tags: []
+    };
+    setSearchFilters(resetFilters);
+    handleSearch({ term: '', searchType: 'all', advancedSearch: {}, filters: resetFilters });
   };
 
   // Handle patient selection
@@ -562,12 +594,68 @@ const Patients = () => {
 
   return (
     <div className="p-6 space-y-6">
+      {/* Page Header with Toggle Buttons */}
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-800">Gerenciamento de Pacientes</h1>
+          <p className="text-sm text-gray-600 mt-1">
+            {filteredPatients.length} de {patients.length} pacientes
+          </p>
+        </div>
+        <div className="flex items-center space-x-3">
+          <button
+            onClick={() => setShowStats(!showStats)}
+            className={`px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors ${
+              showStats
+                ? 'bg-blue-600 text-white'
+                : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+            }`}
+          >
+            <BarChart3 size={18} />
+            <span>Estatísticas</span>
+          </button>
+          <button
+            onClick={() => setShowFilters(!showFilters)}
+            className={`px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors ${
+              showFilters
+                ? 'bg-blue-600 text-white'
+                : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+            }`}
+          >
+            <Filter size={18} />
+            <span>Filtros Avançados</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Patient Stats Dashboard */}
+      {showStats && (
+        <div className="animate-fadeIn">
+          <PatientStats patients={filteredPatients} />
+        </div>
+      )}
+
       {/* Search Component */}
       <PatientSearch
         onSearch={handleSearch}
         onFilterChange={(filters) => setSearchFilters(filters)}
         totalResults={filteredPatients.length}
       />
+
+      {/* Advanced Filters */}
+      {showFilters && (
+        <div className="animate-fadeIn">
+          <PatientFilters
+            filters={searchFilters}
+            onChange={handleFilterChange}
+            onReset={handleResetFilters}
+            patientCounts={{
+              total: patients.length,
+              filtered: filteredPatients.length
+            }}
+          />
+        </div>
+      )}
 
       {/* Patient List */}
       <PatientList
