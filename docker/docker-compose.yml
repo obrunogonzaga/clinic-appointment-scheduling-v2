@@ -14,7 +14,7 @@ services:
       - "27017:27017"
     volumes:
       - mongodb_data:/data/db
-      - ./scripts/mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
+      - ../backend/scripts/mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
     networks:
       - lab_scheduler_network
     healthcheck:
@@ -44,8 +44,8 @@ services:
   # FastAPI Application
   api:
     build:
-      context: .
-      dockerfile: Dockerfile
+      context: ../backend
+      dockerfile: ../docker/Dockerfile
     container_name: lab_scheduler_api
     restart: unless-stopped
     environment:
@@ -55,7 +55,7 @@ services:
     ports:
       - "8000:8000"
     volumes:
-      - ./uploads:/app/uploads  # For file uploads
+      - ../backend/uploads:/app/uploads  # For file uploads
     depends_on:
       mongodb:
         condition: service_healthy

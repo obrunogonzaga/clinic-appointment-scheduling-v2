@@ -75,16 +75,16 @@ cd lab-scheduler-backend
 cp .env.example .env
 
 # Start all services
-docker-compose up -d
+docker-compose -f ../docker/docker-compose.yml up -d
 
 # View logs
-docker-compose logs -f api
+docker-compose -f ../docker/docker-compose.yml logs -f api
 
 # Stop all services
-docker-compose down
+docker-compose -f ../docker/docker-compose.yml down
 
 # Stop and remove volumes (caution: deletes data)
-docker-compose down -v
+docker-compose -f ../docker/docker-compose.yml down -v
 ```
 
 **Services will be available at:**
@@ -155,29 +155,29 @@ The docker-compose stack includes:
 
 ```bash
 # Build and start in development mode
-docker-compose up --build
+docker-compose -f ../docker/docker-compose.yml up --build
 
 # Start in background
-docker-compose up -d
+docker-compose -f ../docker/docker-compose.yml up -d
 
 # View specific service logs
-docker-compose logs -f api
-docker-compose logs -f mongodb
+docker-compose -f ../docker/docker-compose.yml logs -f api
+docker-compose -f ../docker/docker-compose.yml logs -f mongodb
 
 # Restart a service
-docker-compose restart api
+docker-compose -f ../docker/docker-compose.yml restart api
 
 # Access database shell
-docker-compose exec mongodb mongosh -u admin -p admin123
+docker-compose -f ../docker/docker-compose.yml exec mongodb mongosh -u admin -p admin123
 
 # Scale API instances (for load testing)
-docker-compose up --scale api=3
+docker-compose -f ../docker/docker-compose.yml up --scale api=3
 
 # View service status
-docker-compose ps
+docker-compose -f ../docker/docker-compose.yml ps
 
 # Remove everything including volumes
-docker-compose down -v --remove-orphans
+docker-compose -f ../docker/docker-compose.yml down -v --remove-orphans
 ```
 
 ## Development Status

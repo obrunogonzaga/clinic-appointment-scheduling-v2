@@ -21,11 +21,11 @@ echo "✅ docker-compose is available"
 
 # Stop any existing containers
 echo "🧹 Cleaning up existing containers..."
-docker-compose down -v > /dev/null 2>&1
+docker-compose -f ../docker/docker-compose.yml down -v > /dev/null 2>&1
 
 # Start the services
 echo "🚀 Starting services..."
-docker-compose up -d
+docker-compose -f ../docker/docker-compose.yml up -d
 
 # Wait for services to be ready
 echo "⏳ Waiting for services to start..."
@@ -33,7 +33,7 @@ sleep 30
 
 # Check service status
 echo "📊 Service status:"
-docker-compose ps
+docker-compose -f ../docker/docker-compose.yml ps
 
 # Test API health
 echo ""
@@ -69,6 +69,6 @@ echo "   MongoDB:       localhost:27017"
 echo "   Redis:         localhost:6379"
 echo ""
 echo "🔧 Useful commands:"
-echo "   View logs:     docker-compose logs -f api"
-echo "   Stop services: docker-compose down"
-echo "   Restart API:   docker-compose restart api"
+echo "   View logs:     docker-compose -f ../docker/docker-compose.yml logs -f api"
+echo "   Stop services: docker-compose -f ../docker/docker-compose.yml down"
+echo "   Restart API:   docker-compose -f ../docker/docker-compose.yml restart api"
