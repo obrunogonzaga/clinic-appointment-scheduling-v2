@@ -26,24 +26,8 @@ const Schedule = () => {
     }
   };
 
-  const handleProcessingComplete = async (results) => {
-    // Process the uploaded file
-    if (uploadedFile) {
-      try {
-        const result = await processExcelFile(uploadedFile);
-        if (result.success) {
-          setProcessedData(result.data);
-          return; // Don't overwrite with results parameter
-        }
-      } catch (error) {
-        console.error('Error processing file:', error);
-      }
-    }
-    
-    // Only use results parameter if file processing failed or no file
-    if (results) {
-      setProcessedData(results);
-    }
+  const handleProcessingComplete = (processedData) => {
+    setProcessedData(processedData);
   };
 
   const renderStep = () => {
@@ -60,6 +44,7 @@ const Schedule = () => {
         return (
           <ProcessingStep
             uploadedFile={uploadedFile}
+            processFile={processExcelFile}
             onProcessingComplete={handleProcessingComplete}
             onBack={handleBack}
             onNext={handleNext}

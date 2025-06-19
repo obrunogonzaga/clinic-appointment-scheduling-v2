@@ -94,7 +94,7 @@ const validateData = (data) => {
   const missingColumns = essentialColumns.filter(col => !columns.includes(col));
   
   if (missingColumns.length > 0) {
-    throw new Error(`Colunas obrigatórias não encontradas: ${missingColumns.join(', ')}`);
+    throw new Error(`Colunas obrigatórias não encontradas: ${missingColumns.join(', ')}. Verifique se o arquivo é uma planilha DasaExp válida.`);
   }
 
   return data;

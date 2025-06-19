@@ -2,9 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { Settings, Check, AlertCircle, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
-const ProcessingStep = ({ uploadedFile, onProcessingComplete, onBack, onNext }) => {
+const ProcessingStep = ({ uploadedFile, onProcessingComplete, onBack, onNext, processFile }) => {
   const [processing, setProcessing] = useState(false);
   const [completed, setCompleted] = useState(false);
+  const [error, setError] = useState(null);
   const [processingSteps, setProcessingSteps] = useState([
     { id: 1, label: 'Lendo arquivo', status: 'pending' },
     { id: 2, label: 'Validando formato', status: 'pending' },
@@ -24,48 +25,63 @@ const ProcessingStep = ({ uploadedFile, onProcessingComplete, onBack, onNext }) 
 
   const startProcessing = async () => {
     setProcessing(true);
+    setError(null);
     
-    // Simulate step-by-step processing
-    for (let i = 0; i < processingSteps.length; i++) {
-      // Update current step to processing
-      setProcessingSteps(prev => prev.map((step, index) => ({
+    try {
+      // Process file with real data
+      const result = await processFile(uploadedFile);
+      
+      if (result.success) {
+        // Update steps based on real processing
+        for (let i = 0; i < processingSteps.length; i++) {
+          setProcessingSteps(prev => prev.map((step, index) => ({
+            ...step,
+            status: index === i ? 'processing' : index < i ? 'completed' : 'pending'
+          })));
+          
+          await new Promise(resolve => setTimeout(resolve, 300));
+          
+          setProcessingSteps(prev => prev.map((step, index) => ({
+            ...step,
+            status: index <= i ? 'completed' : 'pending'
+          })));
+        }
+
+        // Transform real data for display
+        const processedData = result.data;
+        const carStats = Object.entries(processedData.cars).map(([carName, patients]) => ({
+          name: carName,
+          visits: patients.length,
+          confirmed: patients.filter(p => p.status === 'Confirmado').length,
+          pending: patients.filter(p => p.status !== 'Confirmado').length
+        }));
+
+        const displayResults = {
+          ...processedData,
+          cars: carStats
+        };
+
+        setResults(displayResults);
+        setProcessing(false);
+        setCompleted(true);
+        onProcessingComplete(processedData);
+        toast.success(`Processamento concluído! ${processedData.validRecords} agendamentos processados.`);
+      } else {
+        throw new Error(result.error || 'Erro ao processar arquivo');
+      }
+    } catch (error) {
+      console.error('Processing error:', error);
+      setError(error.message);
+      setProcessing(false);
+      
+      // Mark all steps as error
+      setProcessingSteps(prev => prev.map(step => ({
         ...step,
-        status: index === i ? 'processing' : index < i ? 'completed' : 'pending'
+        status: 'pending'
       })));
       
-      // Wait for realistic processing time
-      await new Promise(resolve => setTimeout(resolve, 800 + Math.random() * 400));
-      
-      // Complete current step
-      setProcessingSteps(prev => prev.map((step, index) => ({
-        ...step,
-        status: index <= i ? 'completed' : 'pending'
-      })));
+      toast.error(`Erro no processamento: ${error.message}`);
     }
-
-    // Simulate processing results
-    const mockResults = {
-      totalRecords: 45,
-      validRecords: 38,
-      errors: 0,
-      warnings: 7,
-      cars: [
-        { name: 'CARRO 1', visits: 12, confirmed: 8, pending: 4 },
-        { name: 'CARRO 2', visits: 11, confirmed: 9, pending: 2 },
-        { name: 'CARRO 3', visits: 15, confirmed: 10, pending: 5 }
-      ],
-      issues: [
-        { type: 'warning', message: '7 pacientes aguardando confirmação' },
-        { type: 'info', message: '3 coletas domiciliares identificadas' },
-        { type: 'success', message: '38 agendamentos processados com sucesso' }
-      ]
-    };
-
-    setResults(mockResults);
-    setProcessing(false);
-    setCompleted(true);
-    onProcessingComplete(mockResults);
-    toast.success(`Processamento concluído! ${mockResults.validRecords} agendamentos processados.`);
   };
 
   const getStepIcon = (status) => {
@@ -166,8 +182,21 @@ const ProcessingStep = ({ uploadedFile, onProcessingComplete, onBack, onNext }) 
           ))}
         </div>
 
+        {/* Error Display */}
+        {error && (
+          <div className="mb-8 bg-red-50 border border-red-200 rounded-lg p-4">
+            <div className="flex items-center">
+              <AlertCircle className="text-red-600 mr-3" size={24} />
+              <div>
+                <h3 className="font-semibold text-red-800">Erro no processamento</h3>
+                <p className="text-red-700 mt-1">{error}</p>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Results Summary */}
-        {results && (
+        {results && !error && (
           <div className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-center">
