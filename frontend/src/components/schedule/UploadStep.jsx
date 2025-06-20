@@ -1,6 +1,7 @@
 import React, { useRef, useState } from 'react';
-import { Upload, FileSpreadsheet, Check, AlertCircle, X } from 'lucide-react';
+import { Upload, FileSpreadsheet, Check, AlertCircle, X, Download } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { generateSampleExcelFile, generateSampleCSVFile } from '../../utils/generateSampleExcel';
 
 const UploadStep = ({ onFileUpload, uploadedFile, onNext }) => {
   const fileInputRef = useRef(null);
@@ -162,6 +163,34 @@ const UploadStep = ({ onFileUpload, uploadedFile, onNext }) => {
             className="hidden"
           />
         </div>
+
+        {/* Sample Files Section */}
+        {!uploadedFile && (
+          <div className="mt-6 border-t pt-6">
+            <h3 className="text-sm font-medium text-gray-700 mb-3">
+              Precisa de um arquivo de exemplo?
+            </h3>
+            <div className="flex flex-wrap gap-3">
+              <button
+                onClick={generateSampleExcelFile}
+                className="flex items-center px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-sm"
+              >
+                <Download className="w-4 h-4 mr-2" />
+                Baixar Exemplo Excel
+              </button>
+              <button
+                onClick={generateSampleCSVFile}
+                className="flex items-center px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-sm"
+              >
+                <Download className="w-4 h-4 mr-2" />
+                Baixar Exemplo CSV
+              </button>
+            </div>
+            <p className="text-xs text-gray-500 mt-2">
+              Arquivos de exemplo no formato DasaExp com dados fictícios
+            </p>
+          </div>
+        )}
 
         {/* File Info and Actions */}
         {uploadedFile && (

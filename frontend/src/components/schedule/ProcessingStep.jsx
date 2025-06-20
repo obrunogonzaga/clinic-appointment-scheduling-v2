@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Settings, Check, AlertCircle, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { processExcelFile } from '../../services/fileProcessor';
 
 const ProcessingStep = ({ uploadedFile, onProcessingComplete, onBack, onNext }) => {
   const [processing, setProcessing] = useState(false);
@@ -24,48 +25,96 @@ const ProcessingStep = ({ uploadedFile, onProcessingComplete, onBack, onNext }) 
 
   const startProcessing = async () => {
     setProcessing(true);
+    console.log('Starting file processing for:', uploadedFile?.name);
     
-    // Simulate step-by-step processing
-    for (let i = 0; i < processingSteps.length; i++) {
-      // Update current step to processing
-      setProcessingSteps(prev => prev.map((step, index) => ({
-        ...step,
-        status: index === i ? 'processing' : index < i ? 'completed' : 'pending'
-      })));
+    try {
+      let fileProcessingResult = null;
       
-      // Wait for realistic processing time
-      await new Promise(resolve => setTimeout(resolve, 800 + Math.random() * 400));
+      // Process each step with actual file processing
+      for (let i = 0; i < processingSteps.length; i++) {
+        console.log(`Processing step ${i + 1}: ${processingSteps[i].label}`);
+        
+        // Update current step to processing
+        setProcessingSteps(prev => prev.map((step, index) => ({
+          ...step,
+          status: index === i ? 'processing' : index < i ? 'completed' : 'pending'
+        })));
+        
+        // Process the actual file on specific steps
+        if (i === 2 && uploadedFile) { // "Extraindo dados" step
+          console.log('Processing Excel/CSV file...');
+          console.log('File details:', {
+            name: uploadedFile.name,
+            size: uploadedFile.size,
+            type: uploadedFile.type
+          });
+          
+          const result = await processExcelFile(uploadedFile);
+          console.log('File processing result:', result);
+          
+          if (!result.success) {
+            console.error('File processing failed:', result.error);
+            throw new Error(result.error || 'Erro ao processar arquivo');
+          }
+          
+          fileProcessingResult = result.data;
+          setResults(result.data);
+        }
+        
+        // Wait for realistic processing time
+        await new Promise(resolve => setTimeout(resolve, 600 + Math.random() * 400));
+        
+        // Complete current step
+        setProcessingSteps(prev => prev.map((step, index) => ({
+          ...step,
+          status: index <= i ? 'completed' : 'pending'
+        })));
+      }
+
+      // Use the file processing result we stored
+      const finalResults = fileProcessingResult || results;
       
-      // Complete current step
-      setProcessingSteps(prev => prev.map((step, index) => ({
-        ...step,
-        status: index <= i ? 'completed' : 'pending'
-      })));
+      if (!finalResults) {
+        console.error('No data was processed from the file');
+        throw new Error('Nenhum dado foi processado do arquivo');
+      }
+
+      console.log('Processing completed successfully:', finalResults);
+      setProcessing(false);
+      setCompleted(true);
+      onProcessingComplete(finalResults);
+      toast.success(`Processamento concluído! ${finalResults.validRecords} agendamentos processados.`);
+      
+    } catch (error) {
+      console.error('Error during processing:', error);
+      console.error('Error stack:', error.stack);
+      
+      setProcessing(false);
+      
+      // Mark current step as failed
+      setProcessingSteps(prev => prev.map((step, index) => {
+        const currentIndex = prev.findIndex(s => s.status === 'processing');
+        return {
+          ...step,
+          status: index === currentIndex ? 'error' : step.status
+        };
+      }));
+      
+      const errorResults = {
+        totalRecords: 0,
+        validRecords: 0,
+        errors: 1,
+        warnings: 0,
+        cars: {},
+        issues: [
+          { type: 'error', message: error.message },
+          { type: 'error', message: `Detalhes: ${error.stack || 'Nenhum detalhe adicional disponível'}` }
+        ]
+      };
+      
+      setResults(errorResults);
+      toast.error(`Erro no processamento: ${error.message}`);
     }
-
-    // Simulate processing results
-    const mockResults = {
-      totalRecords: 45,
-      validRecords: 38,
-      errors: 0,
-      warnings: 7,
-      cars: [
-        { name: 'CARRO 1', visits: 12, confirmed: 8, pending: 4 },
-        { name: 'CARRO 2', visits: 11, confirmed: 9, pending: 2 },
-        { name: 'CARRO 3', visits: 15, confirmed: 10, pending: 5 }
-      ],
-      issues: [
-        { type: 'warning', message: '7 pacientes aguardando confirmação' },
-        { type: 'info', message: '3 coletas domiciliares identificadas' },
-        { type: 'success', message: '38 agendamentos processados com sucesso' }
-      ]
-    };
-
-    setResults(mockResults);
-    setProcessing(false);
-    setCompleted(true);
-    onProcessingComplete(mockResults);
-    toast.success(`Processamento concluído! ${mockResults.validRecords} agendamentos processados.`);
   };
 
   const getStepIcon = (status) => {
@@ -74,6 +123,8 @@ const ProcessingStep = ({ uploadedFile, onProcessingComplete, onBack, onNext }) 
         return <Check className="text-green-600" size={20} />;
       case 'processing':
         return <Loader2 className="text-blue-600 animate-spin" size={20} />;
+      case 'error':
+        return <AlertCircle className="text-red-600" size={20} />;
       default:
         return <div className="w-5 h-5 border-2 border-gray-300 rounded-full" />;
     }
@@ -85,6 +136,8 @@ const ProcessingStep = ({ uploadedFile, onProcessingComplete, onBack, onNext }) 
         return 'bg-green-50 border-green-200';
       case 'processing':
         return 'bg-blue-50 border-blue-200';
+      case 'error':
+        return 'bg-red-50 border-red-200';
       default:
         return 'bg-gray-50 border-gray-200';
     }
@@ -151,6 +204,7 @@ const ProcessingStep = ({ uploadedFile, onProcessingComplete, onBack, onNext }) 
               <span className={`font-medium ${
                 step.status === 'completed' ? 'text-green-800' :
                 step.status === 'processing' ? 'text-blue-800' :
+                step.status === 'error' ? 'text-red-800' :
                 'text-gray-600'
               }`}>
                 {step.label}
@@ -189,49 +243,89 @@ const ProcessingStep = ({ uploadedFile, onProcessingComplete, onBack, onNext }) 
             </div>
 
             {/* Cars Summary */}
-            <div className="bg-gray-50 rounded-lg p-6">
-              <h3 className="text-lg font-semibold text-gray-800 mb-4">Distribuição por Carros</h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {results.cars.map((car, index) => (
-                  <div key={index} className="bg-white rounded-lg p-4 border">
-                    <h4 className="font-semibold text-gray-800">{car.name}</h4>
-                    <div className="mt-2 space-y-1 text-sm">
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">Total de visitas:</span>
-                        <span className="font-medium">{car.visits}</span>
+            {results.cars && Object.keys(results.cars).length > 0 && (
+              <div className="bg-gray-50 rounded-lg p-6">
+                <h3 className="text-lg font-semibold text-gray-800 mb-4">Distribuição por Carros</h3>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {Object.entries(results.cars).map(([carName, patients]) => {
+                    const confirmed = patients.filter(p => p.status === 'Confirmado').length;
+                    const pending = patients.length - confirmed;
+                    
+                    return (
+                      <div key={carName} className="bg-white rounded-lg p-4 border">
+                        <h4 className="font-semibold text-gray-800">{carName}</h4>
+                        <div className="mt-2 space-y-1 text-sm">
+                          <div className="flex justify-between">
+                            <span className="text-gray-600">Total de visitas:</span>
+                            <span className="font-medium">{patients.length}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-green-600">Confirmadas:</span>
+                            <span className="font-medium text-green-800">{confirmed}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-yellow-600">Pendentes:</span>
+                            <span className="font-medium text-yellow-800">{pending}</span>
+                          </div>
+                        </div>
                       </div>
-                      <div className="flex justify-between">
-                        <span className="text-green-600">Confirmadas:</span>
-                        <span className="font-medium text-green-800">{car.confirmed}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-yellow-600">Pendentes:</span>
-                        <span className="font-medium text-yellow-800">{car.pending}</span>
-                      </div>
-                    </div>
-                  </div>
-                ))}
+                    );
+                  })}
+                </div>
               </div>
-            </div>
+            )}
 
             {/* Issues */}
             <div className="space-y-2">
               {results.issues.map((issue, index) => (
                 <div
                   key={index}
-                  className={`flex items-center p-3 rounded-lg ${
+                  className={`p-3 rounded-lg ${
                     issue.type === 'success' ? 'bg-green-50 border border-green-200' :
                     issue.type === 'warning' ? 'bg-yellow-50 border border-yellow-200' :
+                    issue.type === 'error' ? 'bg-red-50 border border-red-200' :
                     'bg-blue-50 border border-blue-200'
                   }`}
                 >
-                  {issue.type === 'warning' && <AlertCircle className="text-yellow-600 mr-3" size={20} />}
-                  {issue.type === 'success' && <Check className="text-green-600 mr-3" size={20} />}
-                  {issue.type === 'info' && <AlertCircle className="text-blue-600 mr-3" size={20} />}
-                  <span className="text-sm font-medium">{issue.message}</span>
+                  <div className="flex items-start">
+                    {issue.type === 'warning' && <AlertCircle className="text-yellow-600 mr-3 mt-0.5" size={20} />}
+                    {issue.type === 'success' && <Check className="text-green-600 mr-3 mt-0.5" size={20} />}
+                    {issue.type === 'info' && <AlertCircle className="text-blue-600 mr-3 mt-0.5" size={20} />}
+                    {issue.type === 'error' && <AlertCircle className="text-red-600 mr-3 mt-0.5" size={20} />}
+                    <div className="flex-1">
+                      <span className={`text-sm font-medium block ${
+                        issue.type === 'error' ? 'text-red-800' :
+                        issue.type === 'warning' ? 'text-yellow-800' :
+                        issue.type === 'success' ? 'text-green-800' :
+                        'text-blue-800'
+                      }`}>
+                        {issue.message}
+                      </span>
+                      {issue.row && (
+                        <span className="text-xs text-gray-600 mt-1 block">
+                          Linha {issue.row}
+                        </span>
+                      )}
+                    </div>
+                  </div>
                 </div>
               ))}
             </div>
+            
+            {/* Error Details Section */}
+            {results.errors > 0 && (
+              <div className="mt-4 bg-red-50 border border-red-200 rounded-lg p-4">
+                <h4 className="text-red-800 font-semibold mb-2">Detalhes do Erro</h4>
+                <p className="text-sm text-red-700 mb-2">
+                  Verifique o console do navegador (F12) para mais detalhes sobre o erro.
+                </p>
+                <div className="text-xs text-red-600 font-mono bg-red-100 p-2 rounded">
+                  {results.issues.filter(i => i.type === 'error').map((error, idx) => (
+                    <div key={idx} className="mb-1">{error.message}</div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         )}
 
@@ -246,13 +340,23 @@ const ProcessingStep = ({ uploadedFile, onProcessingComplete, onBack, onNext }) 
             Voltar
           </button>
           
-          {completed && (
+          {completed && results && results.validRecords > 0 && (
             <button
               onClick={onNext}
               className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors flex items-center font-semibold"
             >
               Visualizar Agenda
               <ChevronRight className="ml-2" size={20} />
+            </button>
+          )}
+          
+          {completed && results && results.validRecords === 0 && (
+            <button
+              onClick={onBack}
+              className="bg-red-600 text-white px-6 py-3 rounded-lg hover:bg-red-700 transition-colors flex items-center font-semibold"
+            >
+              <ChevronLeft className="mr-2" size={20} />
+              Tentar Novamente
             </button>
           )}
         </div>
