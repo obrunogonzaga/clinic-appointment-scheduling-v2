@@ -3,7 +3,6 @@ import StepIndicator from '../components/schedule/StepIndicator';
 import UploadStep from '../components/schedule/UploadStep';
 import ProcessingStep from '../components/schedule/ProcessingStep';
 import CalendarView from '../components/schedule/CalendarView';
-import { processExcelFile } from '../services/fileProcessor';
 
 const Schedule = () => {
   const [currentStep, setCurrentStep] = useState(1);
@@ -26,21 +25,9 @@ const Schedule = () => {
     }
   };
 
-  const handleProcessingComplete = async (results) => {
-    // Process the uploaded file
-    if (uploadedFile) {
-      try {
-        const result = await processExcelFile(uploadedFile);
-        if (result.success) {
-          setProcessedData(result.data);
-          return; // Don't overwrite with results parameter
-        }
-      } catch (error) {
-        console.error('Error processing file:', error);
-      }
-    }
-    
-    // Only use results parameter if file processing failed or no file
+  const handleProcessingComplete = (results) => {
+    // The ProcessingStep now handles the file processing internally
+    // We just need to store the results
     if (results) {
       setProcessedData(results);
     }

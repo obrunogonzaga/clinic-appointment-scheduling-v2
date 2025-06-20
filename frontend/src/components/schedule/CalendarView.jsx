@@ -19,16 +19,40 @@ const CalendarView = ({ processedData, onBack }) => {
   }, [scheduleData, processedData]);
 
 
-  if (!processedData || !processedData.cars || typeof processedData.cars !== 'object') {
+  if (!processedData || !processedData.cars || typeof processedData.cars !== 'object' || Object.keys(processedData.cars).length === 0) {
     return (
       <div className="max-w-6xl mx-auto">
         <div className="bg-white rounded-lg shadow-md p-8 text-center">
-          <h2 className="text-2xl font-bold text-gray-800 mb-4">
-            Agenda - Visualização
-          </h2>
-          <p className="text-gray-600">
-            Nenhum dado processado disponível para visualização.
+          <div className="flex items-center justify-center mb-4">
+            <AlertCircle className="w-12 h-12 text-red-500 mr-3" />
+            <h2 className="text-2xl font-bold text-gray-800">
+              Nenhum Dado Disponível
+            </h2>
+          </div>
+          <p className="text-gray-600 mb-4">
+            {processedData?.errors > 0 
+              ? 'Erro ao processar o arquivo. Verifique o formato e tente novamente.'
+              : 'Nenhum agendamento foi encontrado no arquivo processado.'
+            }
           </p>
+          {processedData?.issues && processedData.issues.length > 0 && (
+            <div className="mt-4 space-y-2">
+              {processedData.issues.filter(issue => issue.type === 'error').map((issue, index) => (
+                <div key={index} className="bg-red-50 border border-red-200 rounded-lg p-3 text-left">
+                  <div className="flex items-center text-red-800">
+                    <AlertCircle className="w-4 h-4 mr-2" />
+                    <span className="text-sm font-medium">{issue.message}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+          <button
+            onClick={onBack}
+            className="mt-4 bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            Voltar ao Upload
+          </button>
         </div>
       </div>
     );
